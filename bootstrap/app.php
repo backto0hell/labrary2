@@ -21,7 +21,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->append(EnsureFrontendRequestsAreStateful::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Без изменений
+
     })
     ->create();
 
