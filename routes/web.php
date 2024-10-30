@@ -8,5 +8,5 @@ Route::get('/', function () {
 });
 
 Route::get('login', function () {
-    return response()->json(['error' => 'Unauthenticated'], 401);
+    return 'Вы не авторизованы';
 })->name('login');

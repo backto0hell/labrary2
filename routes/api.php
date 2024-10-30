@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,8 +12,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/tokens', [AuthController::class, 'listTokens']);
     Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']);
 });
-
-Route::get('/test', function () {
-    return response()->json(['message' => 'It works!']);
-});
-
