@@ -43,6 +43,7 @@ class AuthController extends Controller
             // Получаем максимальное количество активных токенов из переменной окружения
             $maxActiveTokens = env('MAX_ACTIVE_TOKENS', 5);
 
+
             // Проверяем количество активных токенов у пользователя
             $activeTokensCount = $user->tokens()->where('revoked', false)->count();
             if ($activeTokensCount >= $maxActiveTokens) {
@@ -70,8 +71,13 @@ class AuthController extends Controller
     // Разлогирование пользователя
     public function logout(Request $request)
     {
-        $request->user()->tokens()->where('id', $request->tokenId)->delete();
-        return response()->json(['message' => 'Вы успешно вышли'], 200);
+        $tokenId = $request->tokenId;
+        $token = $request->user()->tokens()->find($tokenId);
+        if ($token) {
+            $token->delete();
+            return response()->json(['message' => 'Вы успешно вышли'], 200);
+        }
+        return response()->json(['error' => 'Укажите токен'], 400);
     }
     // Список авторизованных токенов пользователя
     public function listTokens(Request $request)
@@ -79,7 +85,7 @@ class AuthController extends Controller
         $tokens = $request->user()->tokens->map(function ($token) {
             return [
                 'id' => $token->id,
-                'token' => $token->token,
+                'Токен' => $token->token,
             ];
         });
 
