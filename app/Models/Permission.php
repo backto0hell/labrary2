@@ -16,4 +16,19 @@ class Permission extends Model
         'created_by',
         'deleted_by'
     ];
+
+    protected $casts = [
+        'created_by' => 'integer',
+        'deleted_by' => 'integer',
+        'created_at' => 'datetime:Y-m-d H:i:s',
+        'updated_at' => 'datetime:Y-m-d H:i:s',
+    ];
+
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'created_by',
+        'deleted_by'
+    ];
 }
