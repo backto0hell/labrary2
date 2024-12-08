@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-class RoleDTO
+class PermissionDTO
 {
     public $id;
     public $name;
@@ -21,15 +21,15 @@ class RoleDTO
         $this->deleted_by = $deleted_by;
     }
 
-    public static function fromModel($role)
+    public static function fromModel($permission)
     {
         return new self(
-            $role->id,
-            $role->name,
-            $role->description,
-            $role->code,
-            $role->created_by,
-            $role->deleted_by
+            $permission->id,
+            $permission->name,
+            $permission->description,
+            $permission->code,
+            $permission->created_by,
+            $permission->deleted_by
         );
     }
 }

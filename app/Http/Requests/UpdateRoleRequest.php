@@ -3,32 +3,58 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Role;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Validation\Validator;
 use App\DTO\RoleDTO;
 
 class UpdateRoleRequest extends FormRequest
 {
-    public function authorize()
+    public function authorize(): bool
     {
-        return Auth::check();
+        return true;
     }
-    public function rules()
+
+    public function rules(): array
     {
+        $role = $this->route('role');
+
         return [
-            'name' => 'nullable|unique:roles,name,' . $this->route('id'),
-            'code' => 'nullable|unique:roles,code,' . $this->route('id'),
-            'description' => 'nullable',
-            'permission_ids' => 'nullable|array|exists:permissions,id',
+            'name' => 'required|string|unique:roles,name,' . ($role ? $role->id : 'null'),
+            'description' => 'nullable|string',
+            'code' => 'required|string|unique:roles,code,' . ($role ? $role->id : 'null')
         ];
     }
 
-    public function toDTO()
+    protected function failedValidation(Validator $validator)
     {
+        throw new HttpResponseException(response()->json([
+            'errors' => $validator->errors(),
+        ], 422));
+    }
+
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'The name field is required.',
+            'name.unique' => 'The name must be unique.',
+            'code.required' => 'The code field is required.',
+            'code.unique' => 'The code must be unique.'
+        ];
+    }
+
+    public function toDTO(): RoleDTO
+    {
+        $role = $this->route('role');
+
         return new RoleDTO(
-            $this->role->id,
-            $this->name,
-            $this->code,
-            $this->description
+            $role ? $role->id : null,
+            $this->input('name'),
+            $this->input('description'),
+            $this->input('code'),
+            $role ? $role->created_by : null,
+            $role ? $role->deleted_by : null
         );
     }
 }

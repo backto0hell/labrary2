@@ -3,20 +3,29 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Support\Facades\Gate;
+use App\Models\Permission;
+use App\DTO\PermissionDTO;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Validation\Validator;
 
 class UpdatePermissionRequest extends FormRequest
 {
-    public function rules()
+    public function authorize(): bool
     {
-        return [
-            'name' => 'required|unique:permissions,name,' . $this->permission->id,
-            'code' => 'required|unique:permissions,code,' . $this->permission->id,
-            'description' => 'nullable',
-        ];
+        return true;
     }
 
+    public function rules(): array
+    {
+        $permissionId = $this->route('permission') ? $this->route('permission')->id : null;
+
+        return [
+            'name' => 'required|string|unique:permissions,name,' . $permissionId,
+            'description' => 'nullable|string',
+            'code' => 'required|string|unique:permissions,code,' . $permissionId
+        ];
+    }
     protected function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
@@ -24,13 +33,25 @@ class UpdatePermissionRequest extends FormRequest
         ], 422));
     }
 
-    public function toDTO()
+    public function messages(): array
     {
-        return new RoleDTO(
-            $this->role->id,
-            $this->name,
-            $this->code,
-            $this->description
+        return [
+            'name.required' => 'The name field is required.',
+            'name.unique' => 'The name must be unique.',
+            'code.required' => 'The code field is required.',
+            'code.unique' => 'The code must be unique.'
+        ];
+    }
+
+    public function toDTO(): PermissionDTO
+    {
+        return new PermissionDTO(
+            $this->route('permission')->id,
+            $this->input('name'),
+            $this->input('description'),
+            $this->input('code'),
+            $this->route('permission')->created_by,
+            $this->route('permission')->deleted_by
         );
     }
 }

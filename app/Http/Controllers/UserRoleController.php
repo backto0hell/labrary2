@@ -3,58 +3,101 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Role;
+use App\Models\UsersAndRoles;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class UserRoleController extends Controller
 {
-    // Метод для получения списка пользователей
-    public function index()
+    use AuthorizesRequests;
+    public function index(): JsonResponse
     {
-        $users = User::all();
-        return response()->json($users);
+        $this->authorize('viewAny', User::class);
+
+        $usersAndRoles = UsersAndRoles::whereNull('deleted_at')->get();
+        return response()->json($usersAndRoles);
     }
 
-    // Метод для получения ролей пользователя
-    public function show($id)
+    public function show($user_id): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $roles = $user->roles;
+        $this->authorize('view', User::class);
+
+        $userRoles = UsersAndRoles::where('user_id', $user_id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $roles = [];
+        foreach ($userRoles as $userRole) {
+            $role = $userRole->role;
+            if ($role) {
+                $roles[] = $role;
+            }
+        }
+
         return response()->json($roles);
     }
 
-    // Метод для присвоения ролей пользователю
-    public function store(Request $request, $id)
+    public function store(Request $request, $id): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $user->roles()->syncWithoutDetaching($request->roles); // Синхронизация ролей с пользователем
+        $this->authorize('create', User::class);
 
-        return response()->json(['message' => 'роль дана']);
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'role_id' => 'required|array',
+            'role_id.*' => 'exists:roles,id'
+        ]);
+
+        $createdBy = Auth::id();
+
+        $user->roles()->syncWithoutDetaching(array_fill_keys($validated['role_id'], [
+            'created_by' => $createdBy,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]));
+
+        return response()->json(['message' => 'Роль успешно выдана']);
     }
 
-    // Метод для жесткого удаления роли у пользователя
-    public function destroy($id, $role_id)
+    public function destroy($id, $roleId): JsonResponse
     {
+        $this->authorize('delete', User::class);
+
         $user = User::findOrFail($id);
-        $user->roles()->detach($role_id); // Удаление роли у пользователя
-        return response()->json(['message' => 'роль делит']);
+        $user->roles()->detach($roleId);
+
+        return response()->json(['message' => 'Роль успешно удалена']);
     }
 
-    // Метод для мягкого удаления роли у пользователя
-    public function softDelete($id, $role_id)
+    public function softDelete($userId, $roleId): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $role = $user->roles()->findOrFail($role_id);
-        $role->pivot->delete(); // Мягкое удаление роли у пользователя
-        return response()->json(['message' => 'мягкий жидкий удаление роль']);
+        $this->authorize('delete', User::class);
+
+        $user = User::findOrFail($userId);
+
+        $user->roles()->updateExistingPivot($roleId, [
+            'deleted_at' => now(),
+            'deleted_by' => Auth::id()
+        ]);
+
+        return response()->json(['message' => 'Роль мягко удалена у пользователя']);
     }
 
-    // Метод для восстановления мягко удаленной роли у пользователя
-    public function restore($id, $role_id)
+    public function restore($id, $roleId): JsonResponse
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $role = $user->roles()->withTrashed()->findOrFail($role_id);
-        $role->pivot->restore(); // Восстановление роли у пользователя
-        return response()->json(['message' => 'востановлении роли юзер пользователь']);
+        $this->authorize('restore', User::class);
+
+        $userRole = UsersAndRoles::withTrashed()
+            ->where('user_id', $id)
+            ->where('role_id', $roleId)
+            ->firstOrFail();
+
+        $userRole->restore();
+        $userRole->deleted_by = null;
+        $userRole->save();
+
+        return response()->json(['message' => 'Роль для пользователя успешно восстановлена']);
     }
 }
