@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Log;
+
 
 class PermissionPolicy
 {
@@ -49,6 +51,25 @@ class PermissionPolicy
     {
         return $user->hasPermission('restore-permission')
             ? Response::allow()
-            : Response::deny('You do not have permission to restore the permission.');
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
+    public function showPermissionsUser(User $user)
+    {
+        return $user->hasPermission('my-permissions')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
+    public function updateRolePermission(User $user)
+    {
+
+        return $user->hasPermission('update-role-permissions')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
+    public function deleteRolePermission(User $user)
+    {
+        return $user->hasPermission('delete-role-permissions')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 }

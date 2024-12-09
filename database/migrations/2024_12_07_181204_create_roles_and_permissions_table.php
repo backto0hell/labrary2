@@ -13,7 +13,7 @@ class CreateRolesAndPermissionsTable extends Migration
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->foreignId('permission_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            $table->softDeletes(); // Для мягкого удаления
+            $table->softDeletes();
             $table->integer('created_by')->nullable(false);
             $table->integer('deleted_by')->nullable();
         });

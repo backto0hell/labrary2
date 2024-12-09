@@ -22,6 +22,8 @@ class Role extends Model
         'created_at',
         'updated_at',
         'deleted_at',
+        'created_by',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -38,6 +40,6 @@ class Role extends Model
 
     public function permissions()
     {
-        return $this->belongsToMany(Permission::class, 'roles_and_permissions');
+        return $this->belongsToMany(Permission::class, 'roles_and_permissions', 'role_id', 'permission_id');
     }
 }

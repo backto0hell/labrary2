@@ -19,14 +19,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
     Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
 
-    Route::get('auth/me', [AuthController::class, 'me']); // инфа обо мне
-    Route::post('auth/out', [AuthController::class, 'logout']); // выход с акка
-    Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
-    Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
-
-
-
-
     Route::get('ref/policy/role', [RoleController::class, 'index']);
     Route::get('ref/policy/role/{id}', [RoleController::class, 'show']);
     Route::post('ref/policy/role', [RoleController::class, 'store']);
@@ -51,4 +43,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('ref/user/{id}/role/{roleId}', [UserRoleController::class, 'destroy']);
     Route::delete('ref/user/{id}/role/{roleId}/soft', [UserRoleController::class, 'softDelete']);
     Route::post('ref/user/{id}/role/{roleId}/restore', [UserRoleController::class, 'restore']);
+
+    // Отношения разрешений к ролям
+    Route::post('/roles/{role}/permissions', [PermissionController::class, 'assignPermissionsToRole']); // выдать разрешение роли
+    Route::get('/users/{user}/permissions', [PermissionController::class, 'getUserPermissions']); // получить список имеющихся разрешений
+    Route::delete('/roles/{role}/permissions', [PermissionController::class, 'removePermissionsFromRole']); // удаление разрешений у роли
 });

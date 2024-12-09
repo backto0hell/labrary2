@@ -7,6 +7,7 @@ use App\Models\UsersAndRoles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class UserRoleController extends Controller
@@ -26,18 +27,24 @@ class UserRoleController extends Controller
 
         $userRoles = UsersAndRoles::where('user_id', $user_id)
             ->whereNull('deleted_at')
+            ->with(['role'])
             ->get();
 
         $roles = [];
         foreach ($userRoles as $userRole) {
             $role = $userRole->role;
             if ($role) {
-                $roles[] = $role;
+                $roles[] = [
+                    'user_name' => $userRole->user->username,
+                    'role_name' => $role->name,
+                ];
             }
         }
 
         return response()->json($roles);
     }
+
+
 
     public function store(Request $request, $id): JsonResponse
     {

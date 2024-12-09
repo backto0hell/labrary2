@@ -7,6 +7,7 @@ use App\Policies\UserPolicy;
 use App\Models\Role;
 use App\Policies\RolePolicy;
 use App\Models\Permission;
+use Illuminate\Support\Facades\Gate;
 use App\Policies\PermissionPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 

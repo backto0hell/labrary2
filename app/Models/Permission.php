@@ -31,4 +31,9 @@ class Permission extends Model
         'created_by',
         'deleted_by'
     ];
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'roles_and_permissions', 'permission_id', 'role_id');
+    }
 }

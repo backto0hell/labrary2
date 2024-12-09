@@ -5,10 +5,15 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreatePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Models\Permission;
+use App\Models\RolesAndPermissions;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Log;
 
 class PermissionController extends Controller
 {
@@ -93,5 +98,70 @@ class PermissionController extends Controller
         $permission->deleted_by = null;
         $permission->save();
         return response()->json(['message' => 'Permission restored successfully']);
+    }
+
+
+    public function assignPermissionsToRole(Request $request, Role $role)
+    {
+        $this->authorize('updateRolePermission', Permission::class);
+
+        $userId = Auth::id();
+        $permissionIds = $request->input('permissions');
+
+        foreach ($permissionIds as $permissionId) {
+            DB::table('roles_and_permissions')->insert([
+                'role_id' => $role->id,
+                'permission_id' => $permissionId,
+                'created_by' => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json(['message' => 'Permissions assigned successfully']);
+    }
+
+    public function getUserPermissions(User $user)
+    {
+
+        $this->authorize('showPermissionsUser', Permission::class);
+
+        $roles = $user->roles()->with('permissions')->get();
+
+        $permissions = $roles->flatMap(function ($role) {
+            return $role->permissions;
+        })->unique('id')->values();
+
+        return response()->json([
+            'roles' => $roles->map(function ($role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ];
+            }),
+            'permissions' => $permissions->map(function ($permission) {
+                return [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                ];
+            }),
+        ], 200);
+    }
+
+
+    public function removePermissionsFromRole(Request $request, Role $role)
+    {
+        $this->authorize('deleteRolePermission', Permission::class);
+
+        $permissions = $request->input('permissions');
+        if (!$permissions || !is_array($permissions)) {
+            return response()->json(['error' => 'Invalid permissions format'], 400);
+        }
+
+        RolesAndPermissions::where('role_id', $role->id)
+            ->whereIn('permission_id', $permissions)
+            ->delete();
+
+        return response()->json(['message' => 'Permissions removed successfully'], 200);
     }
 }
