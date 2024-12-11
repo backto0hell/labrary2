@@ -51,4 +51,11 @@ class RolePolicy
             ? Response::allow()
             : Response::deny('У вас нет прав для выполнения этого действия');
     }
+
+    public function getStory(User $user)
+    {
+        return $user->hasPermission('get-story-role')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
 }

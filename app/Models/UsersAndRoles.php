@@ -10,7 +10,13 @@ class UsersAndRoles extends Model
     use SoftDeletes;
 
     protected $table = 'users_and_roles';
-    protected $dates = ['deleted_at'];
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'created_by',
+        'deleted_by'
+    ];
 
     public function role()
     {

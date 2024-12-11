@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreatePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Models\Permission;
+use App\Models\ChangeLog;
+use App\DTO\ChangeLogDTO;
+use App\DTO\ChangeLogCollectionDTO;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -34,64 +38,104 @@ class PermissionController extends Controller
     {
         $this->authorize('create', Permission::class);
 
-        $permissionData = $request->validated();
-        $permissionData['created_by'] = Auth::id();
+        DB::beginTransaction();
 
-        $permission = Permission::create($permissionData);
-        return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
+        try {
+            $permissionData = $request->validated();
+            $permissionData['created_by'] = Auth::id();
+
+            $permission = Permission::create($permissionData);
+
+            DB::commit();
+            return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Permission creation failed', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function update(UpdatePermissionRequest $request, $id): JsonResponse
     {
         $this->authorize('update', Permission::class);
 
-        DB::transaction(function () use ($request, $id) {
+        DB::beginTransaction();
+
+        try {
             $permission = Permission::findOrFail($id);
             $permission->update(array_merge(
                 $request->all(),
                 ['created_by' => Auth::id()]
             ));
-        });
 
-        return response()->json(['message' => 'Permission updated successfully.']);
+            DB::commit();
+            return response()->json(['message' => 'Permission updated successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Permission update failed', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function destroy($id): JsonResponse
     {
         $this->authorize('delete', Permission::class);
 
-        DB::transaction(function () use ($id) {
+        DB::beginTransaction();
+
+        try {
             $permission = Permission::findOrFail($id);
             $permission->forceDelete();
-        });
 
-        return response()->json(['message' => 'Permission permanently deleted.']);
+            DB::commit();
+            return response()->json(['message' => 'Permission permanently deleted.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Permission deletion failed', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function softDelete($id): JsonResponse
     {
         $this->authorize('delete', Permission::class);
 
-        DB::transaction(function () use ($id) {
+        DB::beginTransaction();
+
+        try {
             $permission = Permission::findOrFail($id);
             $permission->updateQuietly(['deleted_by' => Auth::id()]);
             $permission->delete();
-        });
 
-        return response()->json(['message' => 'Permission soft deleted successfully.']);
+            DB::commit();
+            return response()->json(['message' => 'Permission soft deleted successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Permission soft deletion failed', 'message' => $e->getMessage()], 500);
+        }
     }
 
-    public function restore($id): JsonResponse
+    public function restoreFromHistory(Request $request, $id): JsonResponse
     {
-        $this->authorize('restore', Permission::class);
+        $this->authorize('update', Permission::class);
 
-        $permission = Permission::withTrashed()->find($id);
-        if (!$permission) {
-            return response()->json(['message' => 'Permission not found'], 404);
+        DB::beginTransaction();
+
+        try {
+            $logId = $request->input('log_id');
+            $changeLog = ChangeLog::findOrFail($logId);
+
+            if ($changeLog->entity_type !== 'Permission' || $changeLog->entity_id !== $id) {
+                throw new \Exception('Invalid log record.');
+            }
+
+            $oldValues = json_decode($changeLog->old_value, true);
+
+            $permission = Permission::findOrFail($id);
+            $permission->update($oldValues);
+
+            DB::commit();
+            return response()->json(['message' => 'Permission restored to previous state successfully.', 'permission' => $permission]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Permission restoration failed.', 'message' => $e->getMessage()], 500);
         }
-        $permission->restore();
-        $permission->deleted_by = null;
-        $permission->save();
-        return response()->json(['message' => 'Permission restored successfully']);
     }
 }

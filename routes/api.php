@@ -1,12 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PermissionLogController;
+use App\Http\Controllers\RoleLogController;
+use App\Http\Controllers\UserLogController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
-use \App\Http\Middleware\CheckPermission;
-use Illuminate\Support\Facades\Auth;
 
 
 Route::post('auth/login', [AuthController::class, 'login']);
@@ -18,15 +19,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/out', [AuthController::class, 'logout']); // выход с акка
     Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
     Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
+    Route::put('auth/update', [AuthController::class, 'updateAccount']); // изменение данных аккаунта
 
-    Route::get('auth/me', [AuthController::class, 'me']); // инфа обо мне
-    Route::post('auth/out', [AuthController::class, 'logout']); // выход с акка
-    Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
-    Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
-
-
-
-
+    // Маршруты управления ролевой политикой (Роли)
     Route::get('ref/policy/role', [RoleController::class, 'index']);
     Route::get('ref/policy/role/{id}', [RoleController::class, 'show']);
     Route::post('ref/policy/role', [RoleController::class, 'store']);
@@ -44,11 +39,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('ref/policy/permission/{id}/soft', [PermissionController::class, 'softDelete']);
     Route::post('ref/policy/permission/{id}/restore', [PermissionController::class, 'restore']);
 
-    // Маршруты управления ролями пользователей
+    // Маршруты управления ролями пользователей 
     Route::get('ref/user', [UserRoleController::class, 'index']);
     Route::get('ref/user/{id}/role', [UserRoleController::class, 'show']);
     Route::post('ref/user/{id}/role', [UserRoleController::class, 'store']);
     Route::delete('ref/user/{id}/role/{roleId}', [UserRoleController::class, 'destroy']);
     Route::delete('ref/user/{id}/role/{roleId}/soft', [UserRoleController::class, 'softDelete']);
     Route::post('ref/user/{id}/role/{roleId}/restore', [UserRoleController::class, 'restore']);
+
+    // Маршруты логирования
+    Route::get('/ref/user/{id}/story', [UserLogController::class, 'getUserChangeLog']);
+    Route::get('/ref/policy/role/{id}/story', [RoleLogController::class, 'getRoleChangeLog']);
+    Route::get('/ref/policy/permission/{id}/story', [PermissionLogController::class, 'getPermissionChangeLog']);
+
+    // Восстановление логов
+    Route::post('/ref/user/{id}/restore', [AuthController::class, 'restoreFromHistory']);
+    Route::post('/ref/role/{id}/restore', [RoleController::class, 'restoreFromHistory']);
+    Route::post('/ref/permission/{id}/restore', [PermissionController::class, 'restoreFromHistory']);
 });

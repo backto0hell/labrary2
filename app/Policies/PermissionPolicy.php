@@ -49,6 +49,13 @@ class PermissionPolicy
     {
         return $user->hasPermission('restore-permission')
             ? Response::allow()
-            : Response::deny('You do not have permission to restore the permission.');
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
+
+    public function getStory(User $user)
+    {
+        return $user->hasPermission('get-story-permission')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 }

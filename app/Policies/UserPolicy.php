@@ -14,41 +14,48 @@ class UserPolicy
     {
         return $user->hasPermission('get-list-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 
     public function view(User $user)
     {
         return $user->hasPermission('read-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 
     public function create(User $user)
     {
         return $user->hasPermission('create-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 
     public function update(User $user)
     {
         return $user->hasPermission('update-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 
     public function delete(User $user)
     {
         return $user->hasPermission('delete-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 
     public function restore(User $user)
     {
         return $user->hasPermission('restore-user')
             ? Response::allow()
-            : Response::deny('У вас нет прав для выполнения этого запроса');
+            : Response::deny('У вас нет прав для выполнения этого действия');
+    }
+
+    public function getStory(User $user)
+    {
+        return $user->hasPermission('get-story-user')
+            ? Response::allow()
+            : Response::deny('У вас нет прав для выполнения этого действия');
     }
 }
