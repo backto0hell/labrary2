@@ -47,36 +47,62 @@ class AuthController extends Controller
         }
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
         // Валидация данных
         $credentials = $request->only('username', 'password');
 
         if (Auth::attempt($credentials)) {
             $user = User::where('username', $request->username)->first();
-
-            // Проверка, включена ли двухфакторная аутентификация
+            // проверка на наличие 2FA (если да)
             if ($user->is_2fa_enabled) {
-                // Генерация кода и отправка на почту
                 $code = rand(100000, 999999);
                 DB::table('users')->where('id', $user->id)->update([
                     'two_fa_code' => $code,
-                    'two_fa_expires_at' => now()->addMinutes(10), // Время действия кода (10 минут)
+                    'two_fa_expires_at' => now()->addMinutes(10),
                 ]);
-
-                // Отправка кода на почту
                 Mail::to($user->email)->send(new TwoFACodeMail($code));
 
                 return response()->json(['message' => '2FA код отправлен на вашу почту. Пожалуйста, введите код.']);
             }
+            //если нет
+            $maxActiveTokens = env('MAX_ACTIVE_TOKENS', 5);
+            $activeTokensCount = $user->tokens()->where('revoked', false)->count();
+            if ($activeTokensCount >= $maxActiveTokens) {
+                DB::rollBack();
+                return response()->json(['error' => 'Превышено максимальное количество активных токенов'], 400);
+            }
 
-            // Если 2FA не включена, сразу авторизация
-            $token = $user->createToken('AccessToken')->accessToken;
+            $token = $user->createToken('AccessToken')->plainTextToken;
             return response()->json(['message' => 'Успешная авторизация', 'token' => $token]);
         }
 
         return response()->json(['error' => 'Неверные учетные данные'], 401);
     }
+
+    public function toggle2FA(Request $request)
+    {
+        $user = User::where('username', $request->username)->first();
+        if (!$user) {
+            return response()->json(['error' => 'Пользователь не авторизован'], 401);
+        }
+
+        // Проверка пароля для подтверждения смены 2FA
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'Неверный пароль'], 403);
+        }
+
+        // Переключение 2FA
+        $user->is_2fa_enabled = !$user->is_2fa_enabled;
+        $user->two_fa_code = null;
+        $user->two_fa_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'message' => $user->is_2fa_enabled ? '2FA включена' : '2FA отключена',
+        ]);
+    }
+
 
     // Получение информации об авторизованном пользователе
     public function me(Request $request)

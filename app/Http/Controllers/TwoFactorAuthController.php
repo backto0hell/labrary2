@@ -15,28 +15,33 @@ class TwoFactorAuthController extends Controller
 
     public function send2FACode(Request $request)
     {
-
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
+        $user = DB::table('users')->where('email', $request->email)->first();
 
         if (!$user) {
             return response()->json(['error' => 'Пользователь не найден'], 404);
         }
+        $requestCount = $user->two_fa_attempts ?? 0;
+        $lastRequestTime = $user->two_fa_last_request_at;
 
-        $code = rand(100000, 999999);
-        $expiresAt = Carbon::now()->addMinutes(10);
+        if ($requestCount >= 3 && $lastRequestTime && Carbon::parse($lastRequestTime)->addSeconds(30)->isFuture()) {
+            return response()->json(['error' => 'Слишком много запросов, попробуйте позже.'], 429);
+        }
 
-        DB::table('users')->where('id', $user->id)->update([
-            'two_fa_code' => $code,
+        $twoFACode = rand(100000, 999999);
+        $expiresAt = now()->addMinutes(10);
+
+        DB::table('users')->where('email', $request->email)->update([
+            'two_fa_code' => $twoFACode,
             'two_fa_expires_at' => $expiresAt,
+            'two_fa_last_request_at' => now(),
+            'two_fa_attempts' => $requestCount + 1,
         ]);
-        Mail::to($user->email)->send(new TwoFACodeMail($code));
+
+        Mail::to($user->email)->send(new TwoFACodeMail($twoFACode));
 
         return response()->json(['message' => 'Код отправлен на вашу почту']);
     }
+
 
     public function verify2FACode(Request $request)
     {
@@ -64,7 +69,7 @@ class TwoFactorAuthController extends Controller
             'two_fa_expires_at' => null
         ]);
 
-        $token = $user->createToken('YourAppName')->plainTextToken;
+        $token = $user->createToken('AccessToken')->plainTextToken;
 
         return response()->json([
             'message' => 'Успешная авторизация',
