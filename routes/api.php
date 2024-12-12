@@ -8,10 +8,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
-
+use App\Http\Controllers\TwoFactorAuthController;
 
 Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/register', [AuthController::class, 'register']);
+
+// 2FA
+Route::post('/toggle-2fa', [TwoFactorAuthController::class, 'toggle2FA']); // подключение двухфакторки
+Route::post('/send-2fa-code', [TwoFactorAuthController::class, 'send2FACode']); // повторная отправка кода
+Route::post('/verify-2fa', [TwoFactorAuthController::class, 'verify2FACode']); // подтверждение входа
 
 Route::middleware('auth:sanctum')->group(function () {
     // регистрация, вход и работа с токенами

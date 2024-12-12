@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\AuthResource;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Mail\TwoFACodeMail;
 use App\Models\ChangeLog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Http\Requests\UpdateUserRequest;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -45,41 +47,35 @@ class AuthController extends Controller
         }
     }
 
-    // Метод авторизации пользователя
-    public function login(LoginRequest $request)
+    public function login(Request $request)
     {
-        DB::beginTransaction();
+        // Валидация данных
+        $credentials = $request->only('username', 'password');
 
-        try {
-            $credentials = $request->only('username', 'password');
+        if (Auth::attempt($credentials)) {
+            $user = User::where('username', $request->username)->first();
 
-            if (Auth::attempt($credentials)) {
-                $user = User::where('username', $request->username)->first();
+            // Проверка, включена ли двухфакторная аутентификация
+            if ($user->is_2fa_enabled) {
+                // Генерация кода и отправка на почту
+                $code = rand(100000, 999999);
+                DB::table('users')->where('id', $user->id)->update([
+                    'two_fa_code' => $code,
+                    'two_fa_expires_at' => now()->addMinutes(10), // Время действия кода (10 минут)
+                ]);
 
-                $maxActiveTokens = env('MAX_ACTIVE_TOKENS', 5);
+                // Отправка кода на почту
+                Mail::to($user->email)->send(new TwoFACodeMail($code));
 
-                $activeTokensCount = $user->tokens()->where('revoked', false)->count();
-                if ($activeTokensCount >= $maxActiveTokens) {
-                    DB::rollBack(); // Откатываем транзакцию при превышении лимита токенов
-                    return response()->json(['error' => 'Превышено максимальное количество активных токенов'], 400);
-                }
-
-                if ($user) {
-                    $token = $user->createToken('AccessToken')->plainTextToken;
-                    DB::commit(); // Фиксируем транзакцию, если все прошло успешно
-                    return response()->json([
-                        'message' => 'Вы успешно авторизовались',
-                        'token' => $token,
-                    ], 200);
-                }
+                return response()->json(['message' => '2FA код отправлен на вашу почту. Пожалуйста, введите код.']);
             }
 
-            DB::rollBack();
-            return response()->json(['error' => 'Авторизация не была пройдена, ошибка при вводе данных'], 401);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => 'Ошибка при авторизации'], 500);
+            // Если 2FA не включена, сразу авторизация
+            $token = $user->createToken('AccessToken')->accessToken;
+            return response()->json(['message' => 'Успешная авторизация', 'token' => $token]);
         }
+
+        return response()->json(['error' => 'Неверные учетные данные'], 401);
     }
 
     // Получение информации об авторизованном пользователе

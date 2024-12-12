@@ -13,7 +13,12 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
+        'is_2fa_enabled',
+        'two_fa_code',
+        'two_fa_expires_at',
     ];
+
+
 
     protected $hidden = [
         'password',
