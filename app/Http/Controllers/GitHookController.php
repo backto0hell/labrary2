@@ -39,7 +39,6 @@ class GitHookController extends Controller
 
         try {
             $ip = $request->ip();
-            $date = now();
 
             // Логирование начала процесса обновления
             HookLog::create([
@@ -76,7 +75,7 @@ class GitHookController extends Controller
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand(['git', 'pull', "origin", "lb6"], 'Updating a project with Git');
+        $this->runCommand(['git', 'pull'], 'Updating a project with Git');
     }
 
     private function runCommand(array $command, $logMessage)
