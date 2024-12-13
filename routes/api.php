@@ -9,10 +9,11 @@ use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\TwoFactorAuthController;
+use App\Http\Controllers\GitHookController;
 
 Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/register', [AuthController::class, 'register']);
-
+Route::post('/hooks/git', [GitHookController::class, 'validateSecretKey']);
 // 2FA
 Route::post('/send-2fa-code', [TwoFactorAuthController::class, 'send2FACode']); // повторная отправка кода
 Route::post('/verify-2fa', [TwoFactorAuthController::class, 'verify2FACode']); // подтверждение входа

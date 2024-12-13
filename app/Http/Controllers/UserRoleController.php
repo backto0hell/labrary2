@@ -44,8 +44,6 @@ class UserRoleController extends Controller
         return response()->json($roles);
     }
 
-
-
     public function store(Request $request, $id): JsonResponse
     {
         $this->authorize('create', User::class);

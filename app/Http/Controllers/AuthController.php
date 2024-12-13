@@ -88,7 +88,7 @@ class AuthController extends Controller
         }
 
         // Проверка пароля для подтверждения смены 2FA
-        if (!Hash::check($request->password, $user->password)) {
+        if (!Hash::check($request->password, hashedValue: $user->password)) {
             return response()->json(['error' => 'Неверный пароль'], 403);
         }
 
