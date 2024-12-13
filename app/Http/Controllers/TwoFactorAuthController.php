@@ -20,8 +20,17 @@ class TwoFactorAuthController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Пользователь не найден'], 404);
         }
+
         $requestCount = $user->two_fa_attempts ?? 0;
         $lastRequestTime = $user->two_fa_last_request_at;
+
+        if ($lastRequestTime && Carbon::parse($lastRequestTime)->addMinutes(10)->isPast()) {
+            DB::table('users')->where('email', $request->email)->update([
+                'two_fa_attempts' => 0,
+                'two_fa_last_request_at' => null,
+            ]);
+            $requestCount = 0;
+        }
 
         if ($requestCount >= 3 && $lastRequestTime && Carbon::parse($lastRequestTime)->addSeconds(30)->isFuture()) {
             return response()->json(['error' => 'Слишком много запросов, попробуйте позже.'], 429);

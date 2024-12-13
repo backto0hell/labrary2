@@ -82,24 +82,27 @@ class AuthController extends Controller
 
     public function toggle2FA(Request $request)
     {
-        $user = User::where('username', $request->username)->first();
-        if (!$user) {
-            return response()->json(['error' => 'Пользователь не авторизован'], 401);
-        }
-
+        $user = Auth::user();
         // Проверка пароля для подтверждения смены 2FA
         if (!Hash::check($request->password, $user->password)) {
             return response()->json(['error' => 'Неверный пароль'], 403);
         }
 
         // Переключение 2FA
-        $user->is_2fa_enabled = !$user->is_2fa_enabled;
-        $user->two_fa_code = null;
-        $user->two_fa_expires_at = null;
-        $user->save();
+        $is_2fa_enabled = !$user->is_2fa_enabled;
+        DB::table('users')
+            ->where('id', $user->id)
+            ->update([
+                'is_2fa_enabled' => $is_2fa_enabled,
+                'two_fa_code' => null,
+                'two_fa_expires_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        $statusMessage = $is_2fa_enabled ? '2FA включена' : '2FA отключена';
 
         return response()->json([
-            'message' => $user->is_2fa_enabled ? '2FA включена' : '2FA отключена',
+            'message' => $statusMessage,
         ]);
     }
 

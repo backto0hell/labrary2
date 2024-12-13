@@ -12,7 +12,6 @@ use App\Http\Controllers\TwoFactorAuthController;
 
 Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/register', [AuthController::class, 'register']);
-
 // 2FA
 Route::post('/send-2fa-code', [TwoFactorAuthController::class, 'send2FACode']); // повторная отправка кода
 Route::post('/verify-2fa', [TwoFactorAuthController::class, 'verify2FACode']); // подтверждение входа
@@ -24,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
     Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
     Route::put('auth/update', [AuthController::class, 'updateAccount']); // изменение данных аккаунта
-    Route::post('/toggle-2fa', [TwoFactorAuthController::class, 'toggle2FA']); // подключение двухфакторки
+    Route::post('/toggle-2fa', [AuthController::class, 'toggle2FA']); // подключение двухфакторки
 
     // Маршруты управления ролевой политикой (Роли)
     Route::get('ref/policy/role', [RoleController::class, 'index']);
