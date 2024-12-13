@@ -75,7 +75,7 @@ class GitHookController extends Controller
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand(['git', 'pull'], 'Updating a project with Git');
+        $this->runCommand(['git', 'pull', 'origin', 'main'], 'Updating a project with Git');
     }
 
     private function runCommand(array $command, $logMessage)
@@ -87,7 +87,12 @@ class GitHookController extends Controller
             'action' => $logMessage,
         ]);
 
-        $process = new Process($command, base_path());
+        $process = new Process(
+            $command,
+            base_path(),
+            ['PATH' => '/path/to/git/bin:/usr/bin:/bin']
+        );
+
         $process->run();
 
         if (!$process->isSuccessful()) {
