@@ -3,99 +3,108 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\HookLog;
-use Illuminate\Process\Exceptions\ProcessFailedException;
-use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Symfony\Component\Process\Process;
+use App\Models\HookLog;
 
 class GitHookController extends Controller
 {
+    protected static $isUpdating = false;
+
     public function validateSecretKey(Request $request)
     {
         $secretKey = env('SECRET_KEY');
-        $inputKey = $request->input('secret_key');
+        $requestKey = $request->input('secret_key');
 
-        // Проверка на наличие секретного ключа
-        if (!$inputKey) {
-            return response()->json(['error' => "Параметр 'secret_key' отсутствует"], 400);
-        }
-
-        // Проверка на совпадение секретного ключа
-        if ($inputKey === $secretKey) {
-            $ipAddress = $request->ip();
-            $currentDate = now();
-
-            // Логирование начала работы хука
-            HookLog::create([
-                'ip_address' => $ipAddress,
-                'action' => 'Git hook triggered',
-                'details' => json_encode(['date' => $currentDate]),
-            ]);
-
-            // Проверка блокировки, чтобы предотвратить одновременное выполнение
-            if (Cache::has('git_update_lock')) {
-                return response()->json(['message' => 'Обновление уже в процессе. Попробуйте позже.'], 409);
-            }
-
-            // Устанавливаем блокировку на 5 минут
-            Cache::put('git_update_lock', true, now()->addMinutes(5));
-
-            try {
-                // Выполнение команд Git
-                $output = $this->executeGitCommands();
-
-                // Логирование успешного завершения операции
-                HookLog::create([
-                    'ip_address' => $ipAddress,
-                    'action' => 'Git update completed',
-                    'details' => json_encode(['output' => $output]),
-                ]);
-
-                return response()->json(['message' => 'Операция успешно выполнена', 'details' => $output], 200);
-            } catch (\Exception $e) {
-                // Логирование ошибки при выполнении команды
-                HookLog::create([
-                    'ip_address' => $ipAddress,
-                    'action' => 'Git update failed',
-                    'details' => json_encode(['error' => $e->getMessage()]),
-                ]);
-
-                return response()->json(['error' => 'Произошла ошибка', 'details' => $e->getMessage()], 500);
-            } finally {
-                // Убираем блокировку после завершения операции
-                Cache::forget('git_update_lock');
-            }
-        } else {
-            // Логирование попытки с неправильным ключом
+        // Логирование неудачного ввода ключа
+        if (!$secretKey || $secretKey != $requestKey) {
             HookLog::create([
                 'ip_address' => $request->ip(),
-                'action' => 'Git hook failed',
-                'details' => json_encode(['error' => 'Invalid secret key']),
+                'action' => 'Invalid secret key',
+            ]);
+            return response()->json(['message' => 'Ошибка: неверный секретный ключ.'], 403);
+        }
+
+        // Логирование, если обновление уже выполняется
+        if (self::$isUpdating) {
+            HookLog::create([
+                'ip_address' => $request->ip(),
+                'action' => 'Update in progress, try again later',
+            ]);
+            return response()->json(['message' => 'Обновление уже выполняется, подождите завершения.'], 429);
+        }
+
+        self::$isUpdating = true;
+
+        try {
+            $ip = $request->ip();
+            $date = now();
+
+            // Логирование начала процесса обновления
+            HookLog::create([
+                'ip_address' => $ip,
+                'action' => "Git update triggered"
             ]);
 
-            return response()->json(['error' => 'Неверный секретный ключ'], 403);
+            $this->runGitCommands();
+
+            // Логирование успешного завершения обновления
+            HookLog::create([
+                'ip_address' => $ip,
+                'action' => 'Project updated successfully',
+            ]);
+
+            return response()->json(['message' => 'Project has been successfully updated.'], 200);
+        } catch (\Exception $e) {
+            // Логирование ошибки
+            HookLog::create([
+                'ip_address' => $request->ip(),
+                'action' => 'Error during update'
+            ]);
+
+            Log::error('Error updating: ' . $e->getMessage());
+            return response()->json(['message' => 'Error updating the project.'], 500);
+        } finally {
+            self::$isUpdating = false;
         }
     }
 
-    private function executeGitCommands()
+    private function runGitCommands()
     {
-        $commands = [
-            'git checkout main',
-            'git reset --hard',
-            'git pull origin main',
-        ];
+        $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
-        $output = [];
-        foreach ($commands as $command) {
-            $process = Process::run($command);  // Используем правильный метод из Laravel
+        $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-            if ($process->failed()) {
-                throw new ProcessFailedException($process);
-            }
+        $this->runCommand(['git', 'pull'], 'Updating a project with Git');
+    }
 
-            $output[] = $process->output();
+    private function runCommand(array $command, $logMessage)
+    {
+        // Логирование действия
+        Log::info($logMessage);
+        HookLog::create([
+            'ip_address' => request()->ip(),
+            'action' => $logMessage,
+        ]);
+
+        $process = new Process($command, base_path());
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            // Логирование ошибки команды
+            HookLog::create([
+                'ip_address' => request()->ip(),
+                'action' => 'Git command failed'
+            ]);
+            throw new \RuntimeException($process->getErrorOutput());
         }
 
-        return $output;
+        // Логирование успешного выполнения команды
+        HookLog::create([
+            'ip_address' => request()->ip(),
+            'action' => 'Git command successful'
+        ]);
+        Log::info($process->getOutput());
     }
 }
