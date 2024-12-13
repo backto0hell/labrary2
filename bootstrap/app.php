@@ -14,7 +14,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
-            'api/*'
+            'api/*',
+            '/hooks/git'
         ]);
 
         $middleware->append(EnsureFrontendRequestsAreStateful::class);
