@@ -74,8 +74,6 @@ class GitHookController extends Controller
         $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
-
-        $this->runCommand(['git', 'pull', 'origin'], 'Updating a project with Git');
     }
 
     private function runCommand(array $command, $logMessage)
