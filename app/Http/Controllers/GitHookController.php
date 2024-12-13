@@ -89,8 +89,7 @@ class GitHookController extends Controller
 
         $process = new Process(
             $command,
-            base_path(),
-            ['PATH' => '/path/to/git/bin:/usr/bin:/bin']
+            base_path()
         );
 
         $process->run();
