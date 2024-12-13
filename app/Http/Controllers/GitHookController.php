@@ -76,7 +76,7 @@ class GitHookController extends Controller
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand(['git', 'pull'], 'Updating a project with Git');
+        $this->runCommand(['git', 'pull', "branch", "lb6"], 'Updating a project with Git');
     }
 
     private function runCommand(array $command, $logMessage)
