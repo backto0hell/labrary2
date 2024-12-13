@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\HookLog;
-use App\Observers\GitHookLogObserver;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Role;
@@ -27,6 +25,5 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserChangeLogObserver::class);
         Role::observe(RoleChangeLogObserver::class);
         Permission::observe(PermissionChangeLogObserver::class);
-        HookLog::observe(GitHookLogObserver::class);
     }
 }

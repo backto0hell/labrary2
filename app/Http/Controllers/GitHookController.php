@@ -79,25 +79,21 @@ class GitHookController extends Controller
 
     private function executeGitCommands()
     {
-        // Массив команд Git для выполнения
         $commands = [
-            'git checkout main',          // Переключение на главную ветку
-            'git reset --hard',           // Отмена изменений
-            'git pull origin main',       // Обновление с актуальной версии
+            'git checkout main',
+            'git reset --hard',
+            'git pull origin main',
         ];
 
         $output = [];
         foreach ($commands as $command) {
-            $process = Process::fromShellCommandline($command);
-            $process->run();
+            $process = Process::run($command);  // Используем правильный метод из Laravel
 
-            // Если команда не выполнена успешно, выбрасываем исключение
-            if (!$process->isSuccessful()) {
+            if ($process->failed()) {
                 throw new ProcessFailedException($process);
             }
 
-            // Добавляем вывод команды в результат
-            $output[] = $process->getOutput();
+            $output[] = $process->output();
         }
 
         return $output;
