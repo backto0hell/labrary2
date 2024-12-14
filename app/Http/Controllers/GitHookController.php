@@ -76,7 +76,7 @@ class GitHookController extends Controller
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand(['git', '-c', 'core.sshCommand=ssh -i' . $sshKeyPath . '-o StrictHostKeyChecking=no', 'pull'], 'Git pull of the main brang');
+        $this->runCommand(['git', '-c', 'core.sshCommand=ssh -i' . $sshKeyPath . '-o StrictHostKeyChecking=no', 'pull', 'origin', 'main'], 'Git pull of the main brang');
     }
 
     private function runCommand(array $command, $logMessage)
@@ -101,7 +101,9 @@ class GitHookController extends Controller
                 'ip_address' => request()->ip(),
                 'action' => 'Git command failed'
             ]);
-            throw new \RuntimeException($process->getErrorOutput());
+            throw new \RuntimeException(
+                "Command failed: " . implode(' ', $command) . "\nError: " . $process->getErrorOutput()
+            );
         }
 
         // Логирование успешного выполнения команды
