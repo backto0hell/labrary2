@@ -17,7 +17,6 @@ class GitHookController extends Controller
         $secretKey = env('SECRET_KEY');
         $requestKey = $request->input('secret_key');
 
-        // Логирование неудачного ввода ключа
         if (!$secretKey || $secretKey != $requestKey) {
             HookLog::create([
                 'ip_address' => $request->ip(),
@@ -26,7 +25,6 @@ class GitHookController extends Controller
             return response()->json(['message' => 'Ошибка: неверный секретный ключ.'], 403);
         }
 
-        // Логирование, если обновление уже выполняется
         if (self::$isUpdating) {
             HookLog::create([
                 'ip_address' => $request->ip(),
@@ -40,7 +38,6 @@ class GitHookController extends Controller
         try {
             $ip = $request->ip();
 
-            // Логирование начала процесса обновления
             HookLog::create([
                 'ip_address' => $ip,
                 'action' => "Git update triggered"
@@ -48,22 +45,21 @@ class GitHookController extends Controller
 
             $this->runGitCommands();
 
-            // Логирование успешного завершения обновления
             HookLog::create([
                 'ip_address' => $ip,
                 'action' => 'Project updated successfully',
             ]);
 
-            return response()->json(['message' => 'Project has been successfully updated.'], 200);
+            return response()->json(['message' => 'Проект успешно обновлен!'], 200);
         } catch (\Exception $e) {
-            // Логирование ошибки
+
             HookLog::create([
                 'ip_address' => $request->ip(),
-                'action' => 'Error during update'
+                'action' => 'Ошибка обновления'
             ]);
 
             Log::error('Error updating: ' . $e->getMessage());
-            return response()->json(['message' => 'Error updating the project.'], 500);
+            return response()->json(['message' => 'Возникла ошибка в результате обновления...'], 500);
         } finally {
             self::$isUpdating = false;
         }
@@ -89,7 +85,6 @@ class GitHookController extends Controller
 
     private function runCommand(array $command, $logMessage)
     {
-        // Логирование действия
         Log::info($logMessage);
         HookLog::create([
             'ip_address' => request()->ip(),
@@ -104,7 +99,7 @@ class GitHookController extends Controller
         $process->run();
 
         if (!$process->isSuccessful()) {
-            // Логирование ошибки команды
+
             HookLog::create([
                 'ip_address' => request()->ip(),
                 'action' => 'Git command failed'
@@ -114,7 +109,6 @@ class GitHookController extends Controller
             );
         }
 
-        // Логирование успешного выполнения команды
         HookLog::create([
             'ip_address' => request()->ip(),
             'action' => 'Git command successful'
