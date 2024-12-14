@@ -71,7 +71,7 @@ class GitHookController extends Controller
 
     private function runGitCommands()
     {
-        $sshKeyPath = "C:\Users\bossd\.ssh\id_ed25519.pub";
+        $sshKeyPath = "C:\Users\bossd\.ssh\id_ed25519";
         $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
@@ -87,10 +87,10 @@ class GitHookController extends Controller
             'ip_address' => request()->ip(),
             'action' => $logMessage,
         ]);
-
+        $gitPath = "C:\Users\bossd\lb_project";
         $process = new Process(
             $command,
-            base_path()
+            $gitPath,
         );
 
         $process->run();
