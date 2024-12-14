@@ -72,11 +72,19 @@ class GitHookController extends Controller
     private function runGitCommands()
     {
         $sshKeyPath = "C:\Users\bossd\.ssh\id_ed25519";
+        $gitPath = "C:\Users\bossd\lb_project";
         $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand(['git', '-c', 'core.sshCommand=ssh -i' . $sshKeyPath . '-o StrictHostKeyChecking=no', 'pull', 'origin', 'main'], 'Git pull of the main brang');
+        $this->runCommand([
+            'git',
+            '-c',
+            'core.sshCommand="ssh -i C:\\Users\\bossd\\.ssh\\id_ed25519 -o StrictHostKeyChecking=no"',
+            'pull',
+            'origin',
+            'main'
+        ], $gitPath, 'Git pull of the main brang');
     }
 
     private function runCommand(array $command, $logMessage)
