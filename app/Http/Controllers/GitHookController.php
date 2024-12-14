@@ -77,7 +77,14 @@ class GitHookController extends Controller
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand([$gitPath, '-c', 'core.sshCommand=ssh -i' . $sshKeyPath . '-o StrictHostKeyChecking=no', 'pull', 'git@github.com:backto0hell/labrary2.git', 'main'], 'Git pull of the main brang');
+        $this->runCommand([
+            $gitPath,
+            '-c',
+            'core.sshCommand=ssh -i ' . $sshKeyPath . ' -o StrictHostKeyChecking=no',
+            'pull',
+            'git@github.com:backto0hell/labrary2.git',
+            'main'
+        ], 'Git pull of the main brang');
     }
 
     private function runCommand(array $command, $logMessage)
