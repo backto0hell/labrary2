@@ -72,19 +72,12 @@ class GitHookController extends Controller
     private function runGitCommands()
     {
         $sshKeyPath = "C:\Users\bossd\.ssh\id_ed25519";
-        $gitPath = "C:\Users\bossd\lb_project";
+        $gitPath = "C:\Program Files\Git\bin\git.exe";
         $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
         $this->runCommand(['git', 'reset', '--hard'], 'Canceling local changes');
 
-        $this->runCommand([
-            'git',
-            '-c',
-            'core.sshCommand="ssh -i C:\\Users\\bossd\\.ssh\\id_ed25519 -o StrictHostKeyChecking=no"',
-            'pull',
-            'origin',
-            'main'
-        ], $gitPath, 'Git pull of the main brang');
+        $this->runCommand([$gitPath, '-c', 'core.sshCommand=ssh -i' . $sshKeyPath . '-o StrictHostKeyChecking=no', 'pull', 'origin', 'main'], 'Git pull of the main brang');
     }
 
     private function runCommand(array $command, $logMessage)
@@ -95,10 +88,10 @@ class GitHookController extends Controller
             'ip_address' => request()->ip(),
             'action' => $logMessage,
         ]);
-        $gitPath = "C:\Users\bossd\lb_project";
+        $repPath = "C:\Users\bossd\lb_project";
         $process = new Process(
             $command,
-            $gitPath,
+            $repPath,
         );
 
         $process->run();
