@@ -6,8 +6,6 @@ use App\Http\Requests\CreatePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Models\Permission;
 use App\Models\ChangeLog;
-use App\DTO\ChangeLogDTO;
-use App\DTO\ChangeLogCollectionDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -119,23 +117,21 @@ class PermissionController extends Controller
         DB::beginTransaction();
 
         try {
-            $logId = $request->input('log_id');
-            $changeLog = ChangeLog::findOrFail($logId);
+            $changeLog = ChangeLog::findOrFail($request->input('log_id'));
 
-            if ($changeLog->entity_type !== 'Permission' || $changeLog->entity_id !== $id) {
-                throw new \Exception('Invalid log record.');
-            }
-
-            $oldValues = json_decode($changeLog->old_value, true);
-
-            $permission = Permission::findOrFail($id);
-            $permission->update($oldValues);
+            $role = Permission::findOrFail($id);
+            $role->update(json_decode($changeLog->old_value, true));
 
             DB::commit();
-            return response()->json(['message' => 'Permission restored to previous state successfully.', 'permission' => $permission]);
+
+            return response()->json(['message' => 'Role restored successfully', 'role' => $role]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Permission restoration failed.', 'message' => $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => 'Role restoration failed.',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }
