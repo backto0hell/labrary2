@@ -176,7 +176,7 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
-            $user->update(array_filter($request->only(['username', 'email', 'birthday'])));
+            $user->update(array_filter($request->only(keys: ['username', 'email', 'birthday'])));
 
             if ($request->password) {
                 $user->password = bcrypt($request->password);

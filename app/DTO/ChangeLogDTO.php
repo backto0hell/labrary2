@@ -4,6 +4,7 @@ namespace App\DTO;
 
 class ChangeLogDTO
 {
+    public $id;
     public $entity_type;
     public $entity_id;
     public $changed_properties;
@@ -11,8 +12,9 @@ class ChangeLogDTO
     public $created_by;
     public $created_at;
 
-    public function __construct($entity_type, $entity_id, $old_value, $new_value, $mutated_by, $created_by, $created_at)
+    public function __construct($id, $entity_type, $entity_id, $old_value, $new_value, $mutated_by, $created_by, $created_at)
     {
+        $this->id = $id;
         $this->entity_type = $entity_type;
         $this->entity_id = $entity_id;
         $this->changed_properties = $this->getChangedProperties($old_value, $new_value);
