@@ -25,20 +25,28 @@ class ChangeLogDTO
 
     private function getChangedProperties($old_value, $new_value)
     {
-        $old_data = json_decode($old_value, true);
-        $new_data = json_decode($new_value, true);
+        // Декодируем значения. Если они некорректны, заменяем на пустой массив.
+        $old_data = $this->safeJsonDecode($old_value);
+        $new_data = $this->safeJsonDecode($new_value);
 
+        // Собираем изменённые свойства.
         $changed_properties = [];
-
         foreach ($new_data as $key => $value) {
-            if (!isset($old_data[$key]) || $old_data[$key] !== $new_data[$key]) {
+            if (!array_key_exists($key, $old_data) || $old_data[$key] !== $value) {
                 $changed_properties[$key] = [
                     'old' => $old_data[$key] ?? null,
-                    'new' => $new_data[$key]
+                    'new' => $value,
                 ];
             }
         }
 
         return $changed_properties;
+    }
+
+    private function safeJsonDecode($json)
+    {
+        // Декодируем JSON и возвращаем массив, либо пустой массив при ошибке.
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }

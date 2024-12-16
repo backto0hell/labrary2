@@ -20,6 +20,7 @@ class RoleLogController extends Controller
 
         $logDTOs = $logs->map(function ($log) {
             return new ChangeLogDTO(
+                $log->id,
                 $log->entity_type,
                 $log->entity_id,
                 $log->old_value,
