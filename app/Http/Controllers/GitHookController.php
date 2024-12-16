@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Process\Process;
 use App\Models\HookLog;
+use App\Models\UpdateStatus;
 
 class GitHookController extends Controller
 {
@@ -16,7 +17,7 @@ class GitHookController extends Controller
     {
         $secretKey = env('SECRET_KEY');
         $requestKey = $request->input('secret_key');
-
+    
         if (!$secretKey || $secretKey != $requestKey) {
             HookLog::create([
                 'ip_address' => $request->ip(),
@@ -24,47 +25,50 @@ class GitHookController extends Controller
             ]);
             return response()->json(['message' => 'Ошибка: неверный секретный ключ.'], 403);
         }
-
-        if (self::$isUpdating) {
-            sleep(10000000000000);
+    
+        // Проверка флага в базе
+        $updateStatus = UpdateStatus::firstOrCreate(['id' => 1]); // Создаем запись, если её нет
+        if ($updateStatus->is_updating) {
             HookLog::create([
                 'ip_address' => $request->ip(),
                 'action' => 'Update in progress, try again later',
             ]);
             return response()->json(['message' => 'Обновление уже выполняется, подождите завершения.'], 429);
         }
-
-        self::$isUpdating = true;
-
+    
+        // Устанавливаем флаг
+        $updateStatus->update(['is_updating' => true]);
+    
         try {
             $ip = $request->ip();
-
+    
             HookLog::create([
                 'ip_address' => $ip,
                 'action' => "Git update triggered"
             ]);
-
+    
             $this->runGitCommands();
-
+    
             HookLog::create([
                 'ip_address' => $ip,
                 'action' => 'Project updated successfully',
             ]);
-
+    
             return response()->json(['message' => 'Проект успешно обновлен!'], 200);
         } catch (\Exception $e) {
-
             HookLog::create([
                 'ip_address' => $request->ip(),
                 'action' => 'Ошибка обновления'
             ]);
-
+    
             Log::error('Error updating: ' . $e->getMessage());
             return response()->json(['message' => 'Возникла ошибка в результате обновления...'], 500);
         } finally {
-            self::$isUpdating = false;
+            // Сбрасываем флаг
+            $updateStatus->update(['is_updating' => false]);
         }
     }
+    
 
     private function runGitCommands()
     {
