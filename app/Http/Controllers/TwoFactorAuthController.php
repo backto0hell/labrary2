@@ -4,11 +4,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Mail\TwoFACodeMail;
+use Illuminate\Support\Facades\Auth; // для auth()
+use Illuminate\Contracts\Auth\Authenticatable; // для определения типа пользователя
+
 
 class TwoFactorAuthController extends Controller
 {
@@ -76,4 +81,26 @@ class TwoFactorAuthController extends Controller
             'token' => $token
         ]);
     }
+
+    public function toggle2fa(Request $request): JsonResponse
+{
+    $user = Auth::user();
+
+    if (!$request->has('password') || empty($request->password)) {
+        return response()->json(['message' => 'Введите пароль!'], 400);
+    }
+
+    if (!Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Неверный пароль.'], 401);
+    }
+
+    $is2faEnabled = $user->is_2fa_enabled ? 0 : 1;
+    DB::table('users')
+    ->where('id', $user->id)
+    ->update(['is_2fa_enabled' => $is2faEnabled]);
+
+    $status = $user->is_2fa_enabled ? 'подключена' : 'отключена';
+    return response()->json(['message' => "2FA была успшено $status к вашей учетной записи!"]);
+}
+
 }

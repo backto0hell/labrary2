@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/tokens', [AuthController::class, 'listTokens']); // показать все активные токены
     Route::post('auth/out_all', [AuthController::class, 'revokeAllTokens']); // отзыв всех токенов
     Route::put('auth/update', [AuthController::class, 'updateAccount']); // изменение данных аккаунта
-    Route::post('/toggle-2fa', [TwoFactorAuthController::class, 'toggle2FA']); // подключение двухфакторки
+    Route::post('/toggle-2fa', [TwoFactorAuthController::class, 'toggle2fa']); // подключение двухфакторки
 
     // Маршруты управления ролевой политикой (Роли)
     Route::get('ref/policy/role', [RoleController::class, 'index']);

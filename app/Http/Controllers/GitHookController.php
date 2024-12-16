@@ -67,7 +67,7 @@ class GitHookController extends Controller
 
     private function runGitCommands()
     {
-        $sshKeyPath = "C:\Users\Ameli\.ssh\id_ed25519"; // изменить
+        $sshKeyPath = "C:\Users\Ameli\.ssh\id_ed25519";
         $gitPath = "C:\Program Files\Git\bin\git.exe";
         $this->runCommand(['git', 'checkout', 'main'], 'Switching to the main branch');
 
@@ -90,7 +90,7 @@ class GitHookController extends Controller
             'ip_address' => request()->ip(),
             'action' => $logMessage,
         ]);
-        $repPath = "C:\VS-Server\labrary2"; // изменить
+        $repPath = "C:\VS-Server\labrary2";
         $process = new Process(
             $command,
             $repPath,
@@ -99,7 +99,6 @@ class GitHookController extends Controller
         $process->run();
 
         if (!$process->isSuccessful()) {
-
             HookLog::create([
                 'ip_address' => request()->ip(),
                 'action' => 'Git command failed'
