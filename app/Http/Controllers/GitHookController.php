@@ -26,6 +26,7 @@ class GitHookController extends Controller
         }
 
         if (self::$isUpdating) {
+            sleep(10000000000000);
             HookLog::create([
                 'ip_address' => $request->ip(),
                 'action' => 'Update in progress, try again later',
